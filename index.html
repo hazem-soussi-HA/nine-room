@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07100d">
+  <title>NINE ROOM — A Nine-Ball Salon</title>
+  <meta name="description" content="Nine Room is a premium nine-ball billiards game for the browser. Play against the House or a friend on a single screen.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=DM+Sans:opsz,wght@9..40,300..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="gameCanvas" aria-label="Nine Room billiards table. Aim with the mouse, hold to charge, release to shoot." tabindex="0"></canvas>
+  <div class="screen-grain" aria-hidden="true"></div>
+  <div class="foul-flash" id="foulFlash" aria-hidden="true"></div>
+
+  <header class="hud" id="hud">
+    <div class="brand" aria-label="Nine Room">
+      <span class="brand-numeral">9</span>
+      <span class="brand-copy">
+        <span class="brand-name">NINE ROOM</span>
+        <span class="brand-sub">A BILLIARDS SALON · HAZOOM</span>
+      </span>
+    </div>
+
+    <div class="rack-track-wrap">
+      <span class="micro-label">THE RACK</span>
+      <div class="rack-track" id="rackTrack" aria-label="Balls remaining in the rack"></div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="icon-btn" id="soundBtn" type="button" aria-label="Mute sound" title="Sound on">
+        <svg class="icon icon-sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.4l4.2 3.4c.4.3 1 .05 1-.45V6.55c0-.5-.6-.76-1-.45L7.4 9.5H4Z" fill="currentColor"/><path d="M15.5 8.3a5 5 0 0 1 0 7.4M18.2 5.7a8.6 8.6 0 0 1 0 12.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg class="icon icon-sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.4l4.2 3.4c.4.3 1 .05 1-.45V6.55c0-.5-.6-.76-1-.45L7.4 9.5H4Z" fill="currentColor"/><path d="m16 9 5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pause game" title="Pause">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.5" height="14" rx="1.2" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" rx="1.2" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="turn-panel" id="turnPanel">
+    <span class="turn-stripe" id="turnStripe"></span>
+    <div class="turn-copy">
+      <span class="micro-label" id="turnKicker">TO SHOOT</span>
+      <strong class="turn-name" id="turnName">YOU</strong>
+      <span class="turn-sub" id="turnSub">Break · full power</span>
+    </div>
+    <div class="turn-status" id="turnStatus">
+      <span class="status-dot"></span>
+      <span id="turnStatusText">READY</span>
+    </div>
+  </div>
+
+  <div class="ball-in-hand-badge" id="ballInHandBadge" hidden>
+    <span class="bih-mark">+</span> BALL IN HAND
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <footer class="bottom-hud" id="bottomHud">
+    <div class="control-hint" id="hint">
+      <span class="keycap">HOLD</span>
+      <span>to charge · release to shoot</span>
+    </div>
+
+    <div class="power-panel" id="powerPanel" aria-label="Shot power">
+      <div class="power-heading">
+        <span class="micro-label">POWER</span>
+        <span class="power-value" id="powerValue">0%</span>
+      </div>
+      <div class="power-track">
+        <div class="power-fill" id="powerFill"></div>
+        <div class="power-ticks" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+      <div class="power-scale" aria-hidden="true"><span>SOFT</span><span>FIRM</span><span>BREAK</span></div>
+    </div>
+
+    <div class="shortcut-hint">
+      <span class="keycap">←</span><span class="keycap">→</span>
+      <span>fine aim</span>
+      <span class="shortcut-sep"></span>
+      <span class="keycap">ESC</span>
+      <span>pause</span>
+    </div>
+  </footer>
+
+  <div class="slowmo-tag" id="slowmoTag" aria-hidden="true">
+    <span class="slowmo-line"></span>
+    <span>THE FINAL BALL</span>
+    <span class="slowmo-line"></span>
+  </div>
+
+  <section class="overlay menu-overlay" id="menuOverlay">
+    <div class="menu-shade"></div>
+    <div class="menu-content">
+      <div class="menu-eyebrow"><span></span> PARLOR No. 9 · OPEN LATE <span></span></div>
+      <h1 class="game-title" aria-label="Nine Room">
+        <span class="title-nine">NINE</span>
+        <span class="title-room">ROOM</span>
+      </h1>
+      <p class="tagline">Nine balls. Two souls.<br>One last shot.</p>
+
+      <div class="menu-rule"></div>
+
+      <div class="mode-label micro-label">CHOOSE YOUR TABLE</div>
+      <div class="mode-list">
+        <button class="mode-btn mode-primary" type="button" data-start="ai">
+          <span class="mode-icon">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="10" r="4.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 23c.6-4 3.4-6.2 7.5-6.2s6.9 2.2 7.5 6.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 1.7v3M14 23.3v3M1.7 14h3M23.3 14h3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".5"/></svg>
+          </span>
+          <span class="mode-copy">
+            <strong>PLAY THE HOUSE</strong>
+            <small>One player · adaptive AI</small>
+          </span>
+          <span class="mode-arrow">↗</span>
+        </button>
+        <button class="mode-btn" type="button" data-start="local">
+          <span class="mode-icon">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="9.5" cy="10" r="3.7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="19.5" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 22.8c.5-3.6 2.8-5.5 6.7-5.5s6.2 1.9 6.7 5.5M16.5 18c3-.7 5.4.8 6.9 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="mode-copy">
+            <strong>LOCAL DUEL</strong>
+            <small>Two players · one table</small>
+          </span>
+          <span class="mode-arrow">↗</span>
+        </button>
+      </div>
+
+      <div class="ai-settings" id="aiSettings">
+        <span class="micro-label">HOUSE SKILL</span>
+        <div class="segmented" role="group" aria-label="AI difficulty">
+          <button type="button" data-difficulty="casual" class="is-active">CASUAL</button>
+          <button type="button" data-difficulty="shark">SHARK</button>
+        </div>
+      </div>
+
+      <details class="how-to">
+        <summary>HOW TO PLAY <span>+</span></summary>
+        <div class="how-to-body">
+          <p><strong>Nine-ball.</strong> Always strike the lowest-numbered ball first. Pocket any ball to keep shooting. Sink the 9-ball on a legal shot to win.</p>
+          <p><strong>Controls.</strong> Move your pointer to aim. Hold the pointer or <kbd>Space</kbd> to charge, release to strike. Arrow keys fine-aim. <kbd>Esc</kbd> pauses the room.</p>
+          <p><strong>Fouls.</strong> Wrong ball first, a scratch, or no rail after contact hands your opponent ball in hand. Three fouls in a row loses the rack.</p>
+        </div>
+      </details>
+
+      <div class="menu-foot">
+        <button class="text-btn" id="menuSoundBtn" type="button">SOUND: ON</button>
+        <span class="menu-foot-rule"></span>
+        <button class="text-btn" id="menuContrastBtn" type="button">HIGH CONTRAST: OFF</button>
+        <span class="menu-foot-rule"></span>
+        <span class="ai-tag">AI-ASSISTED BUILD</span>
+      </div>
+
+      <div class="hazoom-credit">
+        <img class="hazoom-credit-mark" src="assets/hazoom-mark.svg" alt="Hazoom" width="30" height="30">
+        <span class="hazoom-credit-copy">
+          <strong>HAZOOM</strong>
+          <span>© 2026 Hazem Soussi · Dev Lead</span>
+        </span>
+      </div>
+    </div>
+    <div class="menu-corner" aria-hidden="true">
+      <span>EST. 2026</span>
+      <span class="corner-diamond"></span>
+      <span>NO. 09</span>
+    </div>
+  </section>
+
+  <section class="overlay modal-overlay" id="pauseOverlay" hidden>
+    <div class="modal-card">
+      <div class="modal-kicker">THE ROOM IS QUIET</div>
+      <h2 class="modal-title">PAUSED</h2>
+      <p class="modal-sub" id="pauseSub">Take your time.</p>
+      <div class="modal-actions">
+        <button class="btn-primary" id="resumeBtn" type="button">BACK TO THE TABLE</button>
+        <button class="btn-ghost" id="restartBtn" type="button">RE-RACK</button>
+        <button class="btn-ghost" id="quitBtn" type="button">LEAVE THE ROOM</button>
+      </div>
+      <div class="modal-options">
+        <button class="text-btn" id="pauseSoundBtn" type="button">SOUND: ON</button>
+        <span class="menu-foot-rule"></span>
+        <button class="text-btn" id="contrastBtn" type="button">HIGH CONTRAST: OFF</button>
+      </div>
+      <p class="modal-note">Nine-ball · WPA-inspired house rules</p>
+    </div>
+  </section>
+
+  <section class="overlay modal-overlay gameover-overlay" id="gameOverOverlay" hidden>
+    <div class="modal-card gameover-card">
+      <div class="winner-medallion"><span>9</span></div>
+      <div class="modal-kicker" id="gameOverKicker">RACK COMPLETE</div>
+      <h2 class="modal-title" id="gameOverTitle">YOU TAKE<br>THE ROOM</h2>
+      <p class="modal-sub" id="gameOverSub">Nine-ball, clean pocket.</p>
+      <div class="match-stats" id="matchStats"></div>
+      <div class="modal-actions row-actions">
+        <button class="btn-primary" id="rematchBtn" type="button">RUN IT BACK</button>
+        <button class="btn-ghost" id="gameMenuBtn" type="button">MAIN MENU</button>
+      </div>
+      <p class="modal-note">The house always remembers.</p>
+      <p class="modal-credit">
+        <span class="ai-tag">AI-ASSISTED</span>
+        <span>Nine Room · a HAZOOM production · © 2026 Hazem Soussi</span>
+      </p>
+    </div>
+  </section>
+
+  <script src="game.js"></script>
+</body>
+</html>
