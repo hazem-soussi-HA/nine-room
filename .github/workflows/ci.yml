@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Syntax check the game bundle
+        run: node --check game.js
+
+      - name: Asset integrity
+        run: |
+          for f in index.html styles.css game.js favicon.svg assets/hazoom-mark.svg assets/hazoom-logo.svg; do
+            test -f "$f" || { echo "missing asset: $f"; exit 1; }
+          done
+          grep -q "nine-room-settings" game.js
+          grep -q "data-start=\"ai\"" index.html
+          grep -q "data-start=\"local\"" index.html
+
+  smoke:
+    name: Browser smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright
+        run: |
+          npm i -D playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Boot the game and play a break
+        run: node ci/smoke.mjs
